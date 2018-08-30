@@ -17,8 +17,8 @@ import com.skcraft.launcher.creator.model.creator.ModFile;
 import com.skcraft.launcher.creator.model.swing.ModFileTableModel;
 import com.skcraft.launcher.creator.util.ModInfoReader;
 import com.skcraft.launcher.creator.util.ModInfoReader.ModInfo;
-import com.skcraft.launcher.creator.util.NemModList;
-import com.skcraft.launcher.creator.util.NemModList.ModEntry;
+import com.skcraft.launcher.creator.util.CurseModList;
+import com.skcraft.launcher.creator.util.CurseModList.ModEntry;
 import com.skcraft.launcher.dialog.ProgressDialog;
 import com.skcraft.launcher.swing.SwingHelper;
 import com.skcraft.launcher.util.SwingExecutor;
@@ -52,17 +52,17 @@ public class VersionCheckController {
         walker.setFileFilter(pathname -> pathname.getName().endsWith(".jar"));
 
         ModInfoReader binaryInspector = new ModInfoReader();
-        NemModList nemModList = new NemModList();
+        CurseModList curseModList = new CurseModList();
 
         SettableProgress progress = new SettableProgress("Retrieving mod information...", -1);
 
         Deferred<?> deferred = Deferreds.makeDeferred(executor.submit(walker), executor)
-                .thenTap(() -> progress.set("Querying NotEnoughMods for version data...", -1))
+                .thenTap(() -> progress.set("Querying CurseForge for version data...", -1))
                 .thenTap(() -> {
                     try {
-                        nemModList.load(gameVersion);
+                        curseModList.load(gameVersion);
                     } catch (IOException | InterruptedException e) {
-                        throw new RuntimeException("Failed to retrieve mod information from NotEnoughMods. Perhaps NEM doesn't support your pack's MC version.", e);
+                        throw new RuntimeException("Failed to retrieve mod information from CurseForge.", e);
                     }
                 })
                 .thenTap(() -> progress.set("Scanning mod files for manifests...", -1))
@@ -86,12 +86,14 @@ public class VersionCheckController {
                             }
                         }
 
-                        if (mod.getModId() != null) {
-                            ModEntry entry = nemModList.get(mod.getModId());
+                        if (mod.getName() != null) {
+                            ModEntry entry = curseModList.get(mod.getName());
 
                             if (entry != null) {
-                                mod.setLatestVersion(entry.getLatestVersion());
-                                mod.setLatestDevVersion(entry.getLatestDevVersion());
+                                //mod.setLatestVersion(entry.getLatestVersion());
+                                //mod.setLatestDevVersion(entry.getLatestDevVersion());
+                                mod.setLatestVersion("TEST"); // TODO debug fix me
+                                mod.setLatestDevVersion("TEST"); // TODO debug fix me
                                 if (entry.getUrl() != null) {
                                     mod.setUrl(entry.getUrl());
                                 }

@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.skcraft.concurrency.ProgressObservable;
 import lombok.Getter;
 import lombok.extern.java.Log;
+import org.apache.commons.compress.compressors.bzip2.BZip2CompressorInputStream;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
@@ -211,6 +212,26 @@ public class HttpRequest implements Closeable, ProgressObservable {
                 checkInterrupted();
                 bos.write(b);
             }
+            return new BufferedResponse(bos.toByteArray());
+        } finally {
+            close();
+        }
+    }
+
+    public BufferedResponse returnBZip2Content() throws IOException, InterruptedException {
+        if (inputStream == null) {
+            throw new IllegalArgumentException("No input stream available");
+        }
+
+        try {
+            BZip2CompressorInputStream cis = new BZip2CompressorInputStream(inputStream);
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            int b = 0;
+            while ((b = cis.read()) != -1) {
+                checkInterrupted();
+                bos.write(b);
+            }
+            cis.close();
             return new BufferedResponse(bos.toByteArray());
         } finally {
             close();
