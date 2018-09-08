@@ -9,6 +9,7 @@ package com.skcraft.launcher.creator.util;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.skcraft.launcher.util.HttpRequest;
 import lombok.Data;
@@ -21,7 +22,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
-import java.util.HashMap;
 import java.util.Map;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -29,20 +29,20 @@ import static com.google.common.base.Preconditions.checkNotNull;
 public class CurseModList {
 
     @Getter
-    private Map<String, ModEntry> mods = new HashMap<>();
+    private Map<String, ModEntry> mods = ImmutableMap.of();
 
     public void load(String version) throws IOException, InterruptedException {
         checkNotNull(version, "version");
 
-        CurseJSON mods = HttpRequest.get(HttpRequest.url("https://clientupdate-v6.cursecdn.com/feed/addons/432/v10/complete.json.bz2")) // TODO don't hardcode the url
+        List<ModEntry> mods = HttpRequest.get(HttpRequest.url("https://staging-cursemeta.dries007.net/api/v3/direct/addon/search?gameId=432&sectionId=6&gameVersion=" + version))
                 .execute()
                 .expectResponseCode(200)
-                .returnBZip2Content()
-                .asJson(new TypeReference<CurseJSON>() {});
+                .returnContent()
+                .asJson(new TypeReference<List<ModEntry>>() {});
 
         Map<String, ModEntry> index = Maps.newHashMap();
 
-        for (ModEntry entry : mods.getModEntries()) {
+        for (ModEntry entry : mods) {
             index.put(entry.getName(), entry);
         }
 
@@ -50,63 +50,84 @@ public class CurseModList {
     }
 
     @Nullable
-    public ModEntry get(String modId) {
-        checkNotNull(modId, "modId");
-        return mods.get(modId);
-    }
-
-    @Data
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class CurseJSON {
-        @JsonProperty("timestamp")
-        private long timestamp;
-
-        @JsonProperty("data")
-        private List<ModEntry> modEntries = new ArrayList<ModEntry>();
+    public ModEntry get(String modName) {
+        checkNotNull(modName, "modName");
+        return mods.get(modName);
     }
 
     @Data
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class ModEntry {
 
-        @JsonProperty("Id")
-        private String id;
-        @JsonProperty("Name")
+        @JsonProperty("id")
+        private int id;
+        @JsonProperty("name")
         private String name;
-        @JsonProperty("PrimaryAuthorName")
-        private String author;
-        @JsonProperty("WebSiteURL")
-        private URL url;
-        @JsonProperty("Summary")
-        private String summary;
+        @JsonProperty("slug")
+        private String slug;
 
-        @JsonProperty("LatestFiles")
+        @JsonProperty("primaryAuthorName")
+        private String author;
+        @JsonProperty("websiteUrl")
+        private URL url;
+        @JsonProperty("summary")
+        private String summary;
+        @JsonProperty("fullDescription")
+        private String description;
+
+        @JsonProperty("latestFiles")
         private List<GameFile> latestFiles = new ArrayList<>();
+
+        // TODO a better way to do this
+        public String getLatestVersion() {
+            for (GameFile gamefile : getLatestFiles()) {
+                if (gamefile.getReleaseType() == 1) {
+                    return gamefile.getFileName();
+                }
+            }
+            return null;
+        }
+
+        // TODO a smarter way to do this
+        public String getLatestDevVersion() {
+            for (GameFile gamefile : getLatestFiles()) {
+                if (gamefile.getReleaseType() == 2) {
+                    return gamefile.getFileName();
+                }
+            }
+            for (GameFile gamefile : getLatestFiles()) {
+                if (gamefile.getReleaseType() == 3) {
+                    return gamefile.getFileName();
+                }
+            }
+            return null;
+        }
     }
 
     @Data
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class GameFile {
+        @JsonProperty("id")
         private String id;
-        @JsonProperty("FileName")
+        @JsonProperty("fileName")
         private String fileName;
-        @JsonProperty("FileDate")
+        @JsonProperty("fileDate")
         private Date fileDate;
-        @JsonProperty("ReleaseType")
+        @JsonProperty("releaseType")
         private int releaseType;
-        @JsonProperty("DownloadURL")
+        @JsonProperty("downloadUrl")
         private String url;
 
-        @JsonProperty("Dependencies")
+        @JsonProperty("dependencies")
         private List<Map<String, String>> dependencies = new ArrayList<>();
 
-        @JsonProperty("IsAvailable")
+        @JsonProperty("isAvailable")
         private boolean isAvailable;
 
-        @JsonProperty("PackageFingerprint")
+        @JsonProperty("packageFingerprint")
         private String fingerprint;
 
-        @JsonProperty("GameVersion")
+        @JsonProperty("gameVersion")
         private List<String> versions = new ArrayList<>();
     }
 

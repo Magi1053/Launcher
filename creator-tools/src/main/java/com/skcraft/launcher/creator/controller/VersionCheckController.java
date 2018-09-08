@@ -90,10 +90,8 @@ public class VersionCheckController {
                             ModEntry entry = curseModList.get(mod.getName());
 
                             if (entry != null) {
-                                //mod.setLatestVersion(entry.getLatestVersion());
-                                //mod.setLatestDevVersion(entry.getLatestDevVersion());
-                                mod.setLatestVersion("TEST"); // TODO debug fix me
-                                mod.setLatestDevVersion("TEST"); // TODO debug fix me
+                                mod.setLatestVersion(entry.getLatestVersion());
+                                mod.setLatestDevVersion(entry.getLatestDevVersion());
                                 if (entry.getUrl() != null) {
                                     mod.setUrl(entry.getUrl());
                                 }
