@@ -16,6 +16,7 @@ public class InstallProfile {
 
     @JsonProperty("install")
     private InstallData installData;
+    @JsonProperty("version")
     private VersionInfo versionInfo;
 
 }
